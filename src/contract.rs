@@ -3,7 +3,7 @@ use cosmwasm_std::{
     HumanAddr, InitResponse, LogAttribute, Order, Querier, StdError, StdResult, Storage, Uint128,
     WasmMsg,
 };
-
+use terra_cosmwasm::{TaxCapResponse, TerraQuerier};
 use crate::msg::{ConfigResponse, GetBondedResponse, GetHolderResponse,GetAllBondedResponse, HandleMsg, InitMsg, QueryMsg};
 use crate::state::{
     config, config_read, staking_storage, staking_storage_read, StakingInfo, State,
@@ -334,13 +334,16 @@ pub fn handle_claim_reward<S: Storage, A: Api, Q: Querier>(
     if contract_balance.amount < store.available {
         return Err(StdError::generic_err("Contract balance too low"));
     }
+    let querier = TerraQuerier::new(&deps.querier);
+    let tax_cap: TaxCapResponse = querier.query_tax_cap(&state.denom_reward)?;
+    let amount_to_send = store.available.sub(tax_cap.cap)?;
 
     let msg = BankMsg::Send {
         from_address: env.contract.address.clone(),
         to_address: env.message.sender.clone(),
         amount: vec![Coin {
             denom: state.denom_reward,
-            amount: store.available,
+            amount: amount_to_send,
         }],
     };
 
