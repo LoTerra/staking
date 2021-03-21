@@ -1,15 +1,18 @@
+use crate::msg::{
+    ConfigResponse, GetAllBondedResponse, GetBondedResponse, GetHolderResponse, HandleMsg, InitMsg,
+    QueryMsg,
+};
+use crate::state::{
+    config, config_read, staking_storage, staking_storage_read, StakingInfo, State,
+};
 use cosmwasm_std::{
     to_binary, Api, BankMsg, Binary, CanonicalAddr, Coin, CosmosMsg, Env, Extern, HandleResponse,
     HumanAddr, InitResponse, LogAttribute, Order, Querier, StdError, StdResult, Storage, Uint128,
     WasmMsg,
 };
-use terra_cosmwasm::{TaxCapResponse, TerraQuerier};
-use crate::msg::{ConfigResponse, GetBondedResponse, GetHolderResponse,GetAllBondedResponse, HandleMsg, InitMsg, QueryMsg};
-use crate::state::{
-    config, config_read, staking_storage, staking_storage_read, StakingInfo, State,
-};
-use std::ops::{Add, Sub};
 use std::io::Stderr;
+use std::ops::{Add, Sub};
+use terra_cosmwasm::{TaxCapResponse, TerraQuerier};
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
@@ -107,7 +110,7 @@ pub fn handle_stake<S: Storage, A: Api, Q: Querier>(
     if !env.message.sent_funds.is_empty() {
         return Err(StdError::generic_err("Do not send funds with stake"));
     }
-    if amount.is_zero(){
+    if amount.is_zero() {
         return Err(StdError::generic_err("Amount required"));
     }
     // Prepare msg to send
@@ -189,7 +192,7 @@ pub fn handle_unstake<S: Storage, A: Api, Q: Querier>(
     if !env.message.sent_funds.is_empty() {
         return Err(StdError::generic_err("Do not send funds with un_stake"));
     }
-    if amount.is_zero(){
+    if amount.is_zero() {
         return Err(StdError::generic_err("Amount required"));
     }
 
@@ -259,8 +262,8 @@ pub fn handle_claim_unstake<S: Storage, A: Api, Q: Querier>(
             store.period
         )));
     }
-    if store.un_bonded.is_zero(){
-        return Err(StdError::generic_err("No amount available"))
+    if store.un_bonded.is_zero() {
+        return Err(StdError::generic_err("No amount available"));
     }
     // Prepare msg to send
     let msg = QueryMsg::Transfer {
@@ -491,7 +494,7 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
         QueryMsg::GetHolder { address } => to_binary(&query_holder(deps, address)?),
         QueryMsg::TransferFrom { .. } => to_binary(&query_transfer_from(deps)?),
         QueryMsg::Transfer { .. } => to_binary(&query_transfer(deps)?),
-        QueryMsg::GetAllBonded {} => to_binary(&query_all_bonded(deps)?)
+        QueryMsg::GetAllBonded {} => to_binary(&query_all_bonded(deps)?),
     }
 }
 
@@ -524,28 +527,23 @@ fn query_holder<S: Storage, A: Api, Q: Querier>(
         bonded: store.bonded,
         un_bonded: store.un_bonded,
         available: store.available,
-        period: store.period
+        period: store.period,
     })
 }
 fn query_all_bonded<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
 ) -> StdResult<GetAllBondedResponse> {
-
     let total_bonded = staking_storage_read(&deps.storage)
         .range(None, None, Order::Descending)
-        .flat_map(|item| {
-            item.and_then(|(k, stake)| {
-                Ok(stake.bonded)
-            })
-        }
-    ).collect::<Vec<Uint128>>();
+        .flat_map(|item| item.and_then(|(k, stake)| Ok(stake.bonded)))
+        .collect::<Vec<Uint128>>();
 
     let mut total = Uint128::zero();
-    for bonded in total_bonded{
+    for bonded in total_bonded {
         total = total.add(bonded);
     }
-    Ok(GetAllBondedResponse{
-        total_bonded: total
+    Ok(GetAllBondedResponse {
+        total_bonded: total,
     })
 }
 
@@ -561,6 +559,7 @@ fn query_transfer<S: Storage, A: Api, Q: Querier>(_deps: &Extern<S, A, Q>) -> St
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::mock_querier::mock_dependencies_custom;
     use cosmwasm_std::coins;
     use cosmwasm_std::testing::{mock_dependencies, mock_env};
     use cosmwasm_std::StdError::GenericErr;
@@ -739,23 +738,18 @@ mod tests {
             }
         }
         #[test]
-        fn amount_required(){
+        fn amount_required() {
             let before_all = before_all();
             let mut deps = mock_dependencies(before_all.default_length, &[]);
             default_init(&mut deps);
-            let env = mock_env(
-                before_all.default_sender_owner.clone(),
-                &[],
-            );
-            let msg = HandleMsg::Stake {
-                amount: Uint128(0),
-            };
+            let env = mock_env(before_all.default_sender_owner.clone(), &[]);
+            let msg = HandleMsg::Stake { amount: Uint128(0) };
             let res = handle(&mut deps, env.clone(), msg.clone());
             match res {
                 Err(GenericErr {
-                        msg,
-                        backtrace: None,
-                    }) => {
+                    msg,
+                    backtrace: None,
+                }) => {
                     assert_eq!(msg, "Amount required");
                 }
                 _ => panic!("Unexpected error"),
@@ -886,23 +880,18 @@ mod tests {
             }
         }
         #[test]
-        fn amount_required(){
+        fn amount_required() {
             let before_all = before_all();
             let mut deps = mock_dependencies(before_all.default_length, &[]);
             default_init(&mut deps);
-            let env = mock_env(
-                before_all.default_sender.clone(),
-                &[],
-            );
-            let msg = HandleMsg::UnStake {
-                amount: Uint128(0),
-            };
+            let env = mock_env(before_all.default_sender.clone(), &[]);
+            let msg = HandleMsg::UnStake { amount: Uint128(0) };
             let res = handle(&mut deps, env.clone(), msg.clone());
             match res {
                 Err(GenericErr {
-                        msg,
-                        backtrace: None,
-                    }) => {
+                    msg,
+                    backtrace: None,
+                }) => {
                     assert_eq!(msg, "Amount required");
                 }
                 _ => panic!("Unexpected error"),
@@ -1030,9 +1019,9 @@ mod tests {
             let res = handle(&mut deps, env.clone(), msg.clone());
             match res {
                 Err(GenericErr {
-                        msg,
-                        backtrace: None,
-                    }) => {
+                    msg,
+                    backtrace: None,
+                }) => {
                     assert_eq!(msg, "No amount available");
                 }
                 _ => panic!("Unexpected error"),
@@ -1196,13 +1185,21 @@ mod tests {
         #[test]
         fn success() {
             let before_all = before_all();
-            let mut deps = mock_dependencies(
+
+            let mut deps = mock_dependencies_custom(
                 before_all.default_length,
                 &[Coin {
                     denom: "uusd".to_string(),
                     amount: Uint128(10_000),
                 }],
             );
+            /*let mut deps = mock_dependencies(
+                before_all.default_length,
+                &[Coin {
+                    denom: "uusd".to_string(),
+                    amount: Uint128(10_000),
+                }],
+            );*/
             default_init(&mut deps);
             let env = mock_env(before_all.default_sender.clone(), &[]);
             // Stake some funds
@@ -1238,7 +1235,7 @@ mod tests {
                     to_address: before_all.default_sender.clone(),
                     amount: vec![Coin {
                         denom: "uusd".to_string(),
-                        amount: Uint128(1000)
+                        amount: Uint128(999)
                     }]
                 })
             );
@@ -1376,11 +1373,17 @@ mod tests {
             );
             let msg = HandleMsg::PayoutReward {};
             let res = handle(&mut deps, env.clone(), msg.clone()).unwrap();
-            assert_eq!(res.messages[0], CosmosMsg::Bank(BankMsg::Send {
-                from_address: env.contract.address,
-                to_address: before_all.default_sender,
-                amount: vec![Coin { denom: "uusd".to_string(), amount: Uint128(10000) }]
-            }));
+            assert_eq!(
+                res.messages[0],
+                CosmosMsg::Bank(BankMsg::Send {
+                    from_address: env.contract.address,
+                    to_address: before_all.default_sender,
+                    amount: vec![Coin {
+                        denom: "uusd".to_string(),
+                        amount: Uint128(10000)
+                    }]
+                })
+            );
             println!("{:?}", res);
         }
 
