@@ -10,7 +10,6 @@ use cosmwasm_std::{
     HumanAddr, InitResponse, LogAttribute, Order, Querier, StdError, StdResult, Storage, Uint128,
     WasmMsg,
 };
-use std::io::Stderr;
 use std::ops::{Add, Sub};
 use terra_cosmwasm::{TaxCapResponse, TerraQuerier};
 
