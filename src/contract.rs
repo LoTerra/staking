@@ -392,7 +392,7 @@ pub fn handle_payout_reward<S: Storage, A: Api, Q: Querier>(
 
     let sent = match env.message.sent_funds.len() {
         0 => Err(StdError::generic_err(
-            "You need to send funds for share holders"
+            "You need to send funds for share holders",
         )),
         1 => {
             if env.message.sent_funds[0].denom == state.denom_reward {
