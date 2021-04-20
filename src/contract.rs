@@ -121,7 +121,7 @@ pub fn handle_stake<S: Storage, A: Api, Q: Querier>(
     // Convert state address of loterra cw-20
     let lottera_human = deps
         .api
-        .human_address(&state.address_cw20_loterra_smart_contract.clone())?;
+        .human_address(&state.address_cw20_loterra_smart_contract)?;
     // Prepare the message
     let res = encode_msg_execute(msg, lottera_human)?;
 
@@ -152,7 +152,7 @@ pub fn handle_stake<S: Storage, A: Api, Q: Querier>(
     };
 
     Ok(HandleResponse {
-        messages: vec![res.into()],
+        messages: vec![res],
         log: vec![
             LogAttribute {
                 key: "action".to_string(),
@@ -272,7 +272,7 @@ pub fn handle_claim_unstake<S: Storage, A: Api, Q: Querier>(
     // Convert state address of loterra cw-20
     let lottera_human = deps
         .api
-        .human_address(&state.address_cw20_loterra_smart_contract.clone())?;
+        .human_address(&state.address_cw20_loterra_smart_contract)?;
     // Prepare the message
     let res = encode_msg_execute(msg, lottera_human)?;
 
@@ -284,7 +284,7 @@ pub fn handle_claim_unstake<S: Storage, A: Api, Q: Querier>(
     })?;
 
     Ok(HandleResponse {
-        messages: vec![res.into()],
+        messages: vec![res],
         log: vec![
             LogAttribute {
                 key: "action".to_string(),
@@ -391,22 +391,22 @@ pub fn handle_payout_reward<S: Storage, A: Api, Q: Querier>(
     }
 
     let sent = match env.message.sent_funds.len() {
-        0 => Err(StdError::generic_err(format!(
+        0 => Err(StdError::generic_err(
             "You need to send funds for share holders"
-        ))),
+        )),
         1 => {
             if env.message.sent_funds[0].denom == state.denom_reward {
                 Ok(env.message.sent_funds[0].amount)
             } else {
                 Err(StdError::generic_err(format!(
                     "Only {} is accepted",
-                    state.denom_reward.clone()
+                    state.denom_reward
                 )))
             }
         }
         _ => Err(StdError::generic_err(format!(
             "Send only {}, extra denom detected",
-            state.denom_reward.clone()
+            state.denom_reward
         ))),
     }?;
 
@@ -431,7 +431,7 @@ pub fn handle_payout_reward<S: Storage, A: Api, Q: Querier>(
         //return Err(StdError::generic_err("No amount staked"));
         let msg_no_stakers = BankMsg::Send {
             from_address: env.contract.address.clone(),
-            to_address: env.message.sender.clone(),
+            to_address: env.message.sender,
             amount: vec![Coin {
                 denom: state.denom_reward,
                 amount: sent,
@@ -470,7 +470,7 @@ pub fn handle_payout_reward<S: Storage, A: Api, Q: Querier>(
 
     let msg = BankMsg::Send {
         from_address: env.contract.address.clone(),
-        to_address: env.message.sender.clone(),
+        to_address: env.message.sender,
         amount: vec![Coin {
             denom: state.denom_reward,
             amount: final_refund_balance,
