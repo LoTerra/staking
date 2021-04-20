@@ -446,13 +446,13 @@ pub fn handle_payout_reward<S: Storage, A: Api, Q: Querier>(
     }
 
     let mut claimed_amount = Uint128::zero();
-    for stakeHolder in staking {
-        if !stakeHolder.bonded.is_zero() {
-            let reward = stakeHolder.bonded.multiply_ratio(sent, total_staked);
+    for stake_holder in staking {
+        if !stake_holder.bonded.is_zero() {
+            let reward = stake_holder.bonded.multiply_ratio(sent, total_staked);
             if !reward.is_zero() {
                 claimed_amount = claimed_amount.add(reward);
                 staking_storage(&mut deps.storage).update::<_>(
-                    &stakeHolder.address.as_slice(),
+                    &stake_holder.address.as_slice(),
                     |stake| {
                         let mut stake_data = stake.unwrap();
                         stake_data.available = stake_data.available.add(reward);
