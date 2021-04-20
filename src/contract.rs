@@ -534,7 +534,7 @@ fn query_all_bonded<S: Storage, A: Api, Q: Querier>(
 ) -> StdResult<GetAllBondedResponse> {
     let total_bonded = staking_storage_read(&deps.storage)
         .range(None, None, Order::Descending)
-        .flat_map(|item| item.and_then(|(k, stake)| Ok(stake.bonded)))
+        .flat_map(|item| item.and_then(|(_k, stake)| Ok(stake.bonded)))
         .collect::<Vec<Uint128>>();
 
     let mut total = Uint128::zero();
