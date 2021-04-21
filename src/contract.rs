@@ -39,12 +39,20 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     msg: HandleMsg,
 ) -> StdResult<HandleResponse> {
     match msg {
+        // Sender stake LOTA
         HandleMsg::Stake { amount } => handle_stake(deps, env, amount),
+        // Sender unstake LOTA, tokens are locked during an unbonded period
         HandleMsg::UnStake { amount } => handle_unstake(deps, env, amount),
+        // Staker sender claim his reward according bonded weight
         HandleMsg::ClaimReward {} => handle_claim_reward(deps, env),
+        // Staker sender claim his unstake LOTA after unbonding period
         HandleMsg::ClaimUnStaked {} => handle_claim_unstake(deps, env),
+        // Admin can lock the contract
         HandleMsg::SafeLock {} => handle_safe_lock(deps, env),
+        // Admin can renounce
         HandleMsg::Renounce {} => handle_renounce(deps, env),
+        // Everyone can send UST to this message as a rewards for stakers
+        // All rewards will be shared to all stakers according to their bonded weight
         HandleMsg::PayoutReward {} => handle_payout_reward(deps, env),
     }
 }
