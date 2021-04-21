@@ -39,7 +39,7 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
     msg: HandleMsg,
 ) -> StdResult<HandleResponse> {
     match msg {
-        // Sender stake LOTA
+        // Sender stake LOTA and/or increase LOTA stake
         HandleMsg::Stake { amount } => handle_stake(deps, env, amount),
         // Sender unstake LOTA, tokens are locked during an unbonded period
         HandleMsg::UnStake { amount } => handle_unstake(deps, env, amount),
